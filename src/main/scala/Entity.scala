@@ -45,7 +45,7 @@ trait GuaranteedEntityProxy[E <: Entity] extends EntityProxy[E]{
     protected def fetchErrorResolution():E = throw new RuntimeException("Could not fetch the entity for proxy %s".format(this))
 }
 
-trait CollectionProxy[E <: Entity]{
+trait EntityCollectionProxy[E <: Entity]{
   protected  def fetch():Option[Seq[E]]
   protected lazy val items:Seq[E] = fetch().getOrElse(fetchErrorResolution())
   protected def fetchErrorResolution():Seq[E] = throw new RuntimeException("Could not fetch items for collection proxy %s".format(this))
@@ -68,7 +68,7 @@ trait EntityDao[E <: Entity with Id[ID], ID]{
   def findById(id:ID):Option[E]
 }
 
-trait CollectionDao[E <: Entity, OwnerID]{
+trait EntityCollectionDao[E <: Entity, OwnerID]{
   def listByOwnerId(ownerId:OwnerID):Option[Seq[E]]
 }
 
@@ -84,6 +84,17 @@ abstract class DaoEntityProxy[E <: Entity with Id[ID], ID](id:ID, dao:EntityDao[
 }
 
 /**
+ * Entity proxy that relies on a dao to retrieve a collection of entities based on the id of the "owner"
+ * @param ownerId
+ * @param dao
+ * @tparam E
+ * @tparam OwnerID
+ */
+abstract class DaoEntityCollectionProxy[E <: Entity, OwnerID](ownerId:OwnerID, dao:EntityCollectionDao[E,OwnerID]) extends EntityCollectionProxy[E]{
+  protected def fetch() = dao.listByOwnerId(ownerId)
+}
+
+/**
  * Entity proxy that already has the entity. This is useful in many situations, like when you join multiple tables so
  * you can instantiate all (or some) of the objects.
  * @param e  The actual entity to which
@@ -91,6 +102,10 @@ abstract class DaoEntityProxy[E <: Entity with Id[ID], ID](id:ID, dao:EntityDao[
  */
 abstract class PrefetchedEntityProxy[E <: Entity](e:E) extends EntityProxy[E]{
   protected def fetch() = Some(e)
+}
+
+abstract class PrefetchedEntityCollectionProxy[E <: Entity](entities:Seq[E]) extends EntityCollectionProxy[E]{
+  protected def fetch() = Some(entities)
 }
 
 /**
@@ -101,11 +116,20 @@ abstract class PrefetchedEntityProxy[E <: Entity](e:E) extends EntityProxy[E]{
  */
 trait Proxyable[E <: Entity with Id[ID],ID]{
   val dao:EntityDao[E,ID]
+
   type Proxy = EntityProxy[E]
   type GuaranteedProxy = GuaranteedEntityProxy[E]
+
   case class DaoProxy(id:ID) extends DaoEntityProxy[E,ID](id,dao) with Proxy
   case class GuaranteedDaoProxy(id:ID) extends DaoEntityProxy[E,ID](id,dao) with GuaranteedProxy
   case class PrefetchedProxy(e:E) extends PrefetchedEntityProxy[E](e) with GuaranteedProxy
+
+  type CollectionProxy = EntityCollectionProxy[E]
+  case class DaoCollectionProxy[OwnerID](ownerId:OwnerID, dao:EntityCollectionDao[E,OwnerID])
+    extends DaoEntityCollectionProxy[E,OwnerID](ownerId, dao) with CollectionProxy
+  case class PrefetchedCollectionProxy(entities:Seq[E])
+    extends PrefetchedEntityCollectionProxy(entities) with CollectionProxy
+
 }
 
 /*************************/
@@ -122,9 +146,17 @@ object A extends Proxyable[A,Long]{
 case class B(val id:Long, val a:A.GuaranteedProxy) extends Entity with Id[Long]
 
 object B{
-  def apply(id:Long, a:A) = new B(2, A.PrefetchedProxy(a))
-  def apply(id:Long, aId:Long) = new B(2, A.GuaranteedDaoProxy(aId))
+  def apply(id:Long, a:A) = new B(id, A.PrefetchedProxy(a))
+  def apply(id:Long, aId:Long) = new B(id, A.GuaranteedDaoProxy(aId))
 }
+
+case class C(val id:Long, val aa:A.CollectionProxy) extends Entity with Id[Long]
+
+object C{
+  def apply(id:Long, aa:Seq[A]) = new C()
+}
+
+/*************************/
 
 object Test{
   //instantiating B object when we already have A
