@@ -8,11 +8,19 @@ So here's a summary of how it works and what problems it helps you to solve and 
 
 ### 1. Have control over the hierarchy of your classes
 
+TODO
+
 ### 2. Use immutable objects if you want to
+
+TODO
 
 ### 3. Fetch multiple, different entities at once with joins
 
+TODO
+
 ### 4. Store a referenced, already fetched, entity directly in the referencing object
+
+TODO
 
 ## How it works
 
