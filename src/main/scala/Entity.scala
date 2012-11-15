@@ -122,8 +122,8 @@ object A extends Proxyable[A,Long]{
 case class B(val id:Long, val a:A.GuaranteedProxy) extends Entity with Id[Long]
 
 object B{
-  def apply(id:Long, a:A) = new B(2, A.PrefetchedProxy(a))
-  def apply(id:Long, aId:Long) = new B(2, A.GuaranteedDaoProxy(aId))
+  def apply(id:Long, a:A) = new B(id, A.PrefetchedProxy(a))
+  def apply(id:Long, aId:Long) = new B(id, A.GuaranteedDaoProxy(aId))
 }
 
 object Test{
