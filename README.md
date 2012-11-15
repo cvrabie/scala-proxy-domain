@@ -77,3 +77,5 @@ The best way to use the entities is to use the implicit conversion from **Entity
 	import EntityProxy.GuaranteedEntityProxyToEntity
 	println( c1.driver.name )
 	println( c2.driver.name )
+	
+![Class inner structure](http://yuml.me/8849be87 "")
