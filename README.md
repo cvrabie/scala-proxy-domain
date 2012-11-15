@@ -4,9 +4,15 @@ It does not claim to solve all your problems or work in all corner cases and wil
 
 So here's a summary of how it works and what problems it helps you to solve and how:
 
-## Problems it tries to solve
+## Solutions to problems/peeves
 
-TODO
+### 1. Have control over the hierarchy of your classes
+
+### 2. Use immutable objects if you want to
+
+### 3. Fetch multiple, different entities at once with joins
+
+### 4. Store a referenced, already fetched, entity directly in the referencing object
 
 ## How it works
 
