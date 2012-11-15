@@ -51,6 +51,10 @@ trait EntityCollectionProxy[E <: Entity]{
   protected def fetchErrorResolution():Seq[E] = throw new RuntimeException("Could not fetch items for collection proxy %s".format(this))
 }
 
+object EntityCollectionProxy{
+  implicit def EntityCollectionProxyToCollection[E <: Entity](ecp:EntityCollectionProxy[E]) = ecp.items
+}
+
 /**
  * Entity proxy that knows how to retrieve its entity based on the primary key
  * @param id The id of the entity being proxied
@@ -141,6 +145,10 @@ object A extends Proxyable[A,Long]{
   val dao = new EntityDao[A,Long] {
     def findById(id: Long) = Some(A(13,"Sarah"))
   }
+  //mock dao for fetching items owned C
+  val daoForC = new EntityCollectionDao[A,Long]{
+    def listByOwnerId(ownerId: Long) = Some(Seq(A(14,"John"),A(15,"Illy")))
+  }
 }
 
 case class B(val id:Long, val a:A.GuaranteedProxy) extends Entity with Id[Long]
@@ -153,7 +161,8 @@ object B{
 case class C(val id:Long, val aa:A.CollectionProxy) extends Entity with Id[Long]
 
 object C{
-  def apply(id:Long, aa:Seq[A]) = new C()
+  def apply(id:Long, aa:Seq[A]) = new C(id, A.PrefetchedCollectionProxy(aa))
+  def apply(id:Long) = new C(id, A.DaoCollectionProxy(id,A.daoForC))
 }
 
 /*************************/
@@ -162,10 +171,20 @@ object Test{
   //instantiating B object when we already have A
   val b1 = B(2, A(5, "Jimmy"))
   //instantiating B object when we only know A's id
-  val b2 = B(2, 5)
+  val b2 = B(3, 5)
 
   //use both objects in the same way
   import EntityProxy.GuaranteedEntityProxyToEntity
   println( b1.a.name )
   println( b2.a.name )
+
+  //instantiate C when we already know the collection of child elements
+  val c1 = C(2, Seq(A(5,"Jimmy"),A(6,"Marlow")))
+  //instantiate C when we don't know the referenced collection
+  val c2 = C(2)
+
+  //user both objects in the same way
+  import EntityCollectionProxy.EntityCollectionProxyToCollection
+  c1.aa.foreach( a => println(a.name) )
+  c2.aa.foreach( a => println(a.name) )
 }
